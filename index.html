@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1.0,
+maximum-scale=1.0,
+user-scalable=no">
+
+<title>Una noche tranquila</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#020611;
+    touch-action:none;
+    font-family:Arial,sans-serif;
+}
+
+#scene{
+    position:fixed;
+    inset:0;
+}
+
+canvas{
+    display:block;
+    width:100%;
+    height:100%;
+}
+
+#intro{
+    position:fixed;
+    inset:0;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+
+    color:white;
+
+    background:rgba(2,6,17,.88);
+
+    z-index:10;
+
+    transition:opacity 1.5s ease;
+
+    pointer-events:none;
+}
+
+#intro h1{
+    font-size:clamp(28px,7vw,65px);
+    font-weight:300;
+
+    letter-spacing:8px;
+
+    text-align:center;
+
+    text-shadow:
+        0 0 15px white,
+        0 0 35px rgba(180,210,255,.8);
+}
+
+#intro p{
+    margin-top:15px;
+
+    opacity:.75;
+
+    font-size:14px;
+
+    letter-spacing:3px;
+}
+
+#controls{
+    position:fixed;
+
+    bottom:20px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    color:rgba(255,255,255,.65);
+
+    font-size:12px;
+
+    letter-spacing:1px;
+
+    text-align:center;
+
+    z-index:5;
+
+    pointer-events:none;
+
+    transition:opacity 2s;
+}
+
+</style>
+
+
+<script type="importmap">
+{
+    "imports":{
+        "three":
+        "https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js"
+    }
+}
+</script>
+
+</head>
+
+<body>
+
+<div id="scene"></div>
+
+<div id="intro">
+
+<h1>UNA NOCHE TRANQUILA</h1>
+
+<p>MIRA A TU ALREDEDOR</p>
+
+</div>
+
+<div id="controls">
+
+ARRASTRA PARA MIRAR A TU ALREDEDOR · DESLIZA CON DOS DEDOS PARA ACERCAR
+
+</div>
+
+
+<script type="module">
+
+import * as THREE from "three";
+
+
+/* =========================================================
+   ESCENA
+========================================================= */
+
+const scene =
+new THREE.Scene();
+
+scene.background =
+new THREE.Color(0x020611);
+
+scene.fog =
+new THREE.FogExp2(
+    0x020611,
+    0.006
+);
+
+
+/* =========================================================
+   CÁMARA
+========================================================= */
+
+const camera =
+new THREE.PerspectiveCamera(
+    70,
+    window.innerWidth /
+    window.innerHeight,
+    .1,
+    1200
+);
+
+camera.position.set(
+    0,
+    2.1,
+    7
+);
+
+
+/* =========================================================
+   RENDER
+========================================================= */
+
+const renderer =
+new THREE.WebGLRenderer({
+    antialias:true,
+    powerPreference:
+        "high-performance"
+});
+
+renderer.setPixelRatio(
+    Math.min(
+        window.devicePixelRatio,
+        2
+    )
+);
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+renderer.outputColorSpace =
+THREE.SRGBColorSpace;
+
+renderer.toneMapping =
+THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure =
+1.15;
+
+document
+.getElementById("scene")
+.appendChild(
+    renderer.domElement
+);
+
+
+/* =========================================================
+   LUCES
+========================================================= */
+
+const ambientLight =
+new THREE.HemisphereLight(
+    0x7185b5,
+    0x11130c,
+    1.25
+);
+
+scene.add(
+    ambientLight
+);
+
+
+const moonLight =
+new THREE.DirectionalLight(
+    0xb8c9ff,
+    2
+);
+
+moonLight.position.set(
+    -80,
+    100,
+    -100
+);
+
+scene.add(
+    moonLight
+);
+
+
+/* =========================================================
+   LUNA
+========================================================= */
+
+const moon =
+new THREE.Mesh(
+
+    new THREE.SphereGeometry(
+        7,
+        32,
+        32
+    ),
+
+    new THREE.MeshBasicMaterial({
+        color:0xf4f0d8
+    })
+
+);
+
+moon.position.set(
+    -55,
+    75,
+    -120
+);
+
+scene.add(
+    moon
+);
+
+
+/* =========================================================
+   HALO DE LA LUNA
+========================================================= */
+
+const haloCanvas =
+document.createElement("canvas");
+
+haloCanvas.width = 256;
+haloCanvas.height = 256;
+
+const haloCtx =
+haloCanvas.getContext("2d");
+
+const gradient =
+haloCtx.createRadialGradient(
+    128,
+    128,
+    10,
+    128,
+    128,
+    125
+);
+
+gradient.addColorStop(
+    0,
+    "rgba(220,230,255,.4)"
+);
+
+gradient.addColorStop(
+    .25,
+    "rgba(180,200,255,.18)"
+);
+
+gradient.addColorStop(
+    1,
+    "rgba(100,130,255,0)"
+);
+
+haloCtx.fillStyle =
+gradient;
+
+haloCtx.fillRect(
+    0,
+    0,
+    256,
+    256
+);
+
+const haloTexture =
+new THREE.CanvasTexture(
+    haloCanvas
+);
+
+const halo =
+new THREE.Sprite(
+
+    new THREE.SpriteMaterial({
+        map:haloTexture,
+        transparent:true,
+        depthWrite:false
+    })
+
+);
+
+halo.scale.set(
+    35,
+    35,
+    1
+);
+
+halo.position.copy(
+    moon.position
+);
+
+scene.add(
+    halo
+);
+
+
+/* =========================================================
+   ESTRELLAS
+   MUCHÍSIMAS MÁS
+========================================================= */
+
+const starGroup =
+new THREE.Group();
+
+scene.add(
+    starGroup
+);
+
+
+/* ---------------------------------------------------------
+   ESTRELLAS PEQUEÑAS
+--------------------------------------------------------- */
+
+const starCount =
+18000;
+
+const starPositions =
+new Float32Array(
+    starCount * 3
+);
+
+for(
+    let i = 0;
+    i < starCount;
+    i++
+){
+
+    const radius =
+        250 +
+        Math.random() * 500;
+
+    const theta =
+        Math.random() *
+        Math.PI * 2;
+
+    const phi =
+        Math.random() *
+        Math.PI * .58;
+
+
+    starPositions[i * 3] =
+
+        Math.cos(theta) *
+        Math.sin(phi) *
+        radius;
+
+
+    starPositions[i * 3 + 1] =
+
+        Math.cos(phi) *
+        radius * .75
+        + 20;
+
+
+    starPositions[i * 3 + 2] =
+
+        Math.sin(theta) *
+        Math.sin(phi) *
+        radius;
+}
+
+
+const starGeometry =
+new THREE.BufferGeometry();
+
+starGeometry.setAttribute(
+    "position",
+
+    new THREE.BufferAttribute(
+        starPositions,
+        3
+    )
+);
+
+
+const starMaterial =
+new THREE.PointsMaterial({
+
+    color:0xffffff,
+
+    size:2.3,
+
+    transparent:true,
+
+    opacity:1,
+
+    sizeAttenuation:true,
+
+    depthWrite:false
+
+});
+
+
+const stars =
+new THREE.Points(
+    starGeometry,
+    starMaterial
+);
+
+starGroup.add(
+    stars
+);
+
+
+/* =========================================================
+   ESTRELLAS GRANDES
+========================================================= */
+
+const bigStars =
+700;
+
+for(
+    let i = 0;
+    i < bigStars;
+    i++
+){
+
+    const star =
+    new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+            .045 +
+            Math.random() * .09,
+
+            8,
+            8
+        ),
+
+        new THREE.MeshBasicMaterial({
+
+            color:
+            Math.random() > .12
+            ? 0xffffff
+            : 0xdce8ff
+
+        })
+
+    );
+
+
+    star.position.set(
+
+        (Math.random()-.5) *
+        700,
+
+        30 +
+        Math.random() * 250,
+
+        (Math.random()-.5) *
+        700
+
+    );
+
+
+    scene.add(
+        star
+    );
+}
+
+
+/* =========================================================
+   ESTRELLAS DESTELLANTES
+========================================================= */
+
+const shiningStars =
+180;
+
+const shiningStarObjects =
+[];
+
+
+for(
+    let i = 0;
+    i < shiningStars;
+    i++
+){
+
+    const star =
+    new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+            .10 +
+            Math.random() * .12,
+
+            8,
+            8
+        ),
+
+        new THREE.MeshBasicMaterial({
+
+            color:0xffffff,
+
+            transparent:true,
+
+            opacity:.9,
+
+            depthWrite:false
+
+        })
+
+    );
+
+
+    star.position.set(
+
+        (Math.random()-.5) *
+        600,
+
+        50 +
+        Math.random() * 220,
+
+        (Math.random()-.5) *
+        600
+
+    );
+
+
+    star.userData.phase =
+        Math.random() *
+        Math.PI * 2;
+
+
+    star.userData.speed =
+        .5 +
+        Math.random() * 1.5;
+
+
+    scene.add(
+        star
+    );
+
+
+    shiningStarObjects.push(
+        star
+    );
+}
+
+
+/* =========================================================
+   TERRENO
+========================================================= */
+
+const terrainSize =
+500;
+
+const terrainSegments =
+180;
+
+
+const terrainGeometry =
+new THREE.PlaneGeometry(
+
+    terrainSize,
+    terrainSize,
+
+    terrainSegments,
+    terrainSegments
+
+);
+
+
+const terrainPositions =
+terrainGeometry.attributes.position;
+
+
+for(
+    let i = 0;
+    i < terrainPositions.count;
+    i++
+){
+
+    const x =
+        terrainPositions.getX(i);
+
+    const y =
+        terrainPositions.getY(i);
+
+
+    const height =
+
+        Math.sin(x*.035) * .8 +
+
+        Math.cos(y*.04) * .7 +
+
+        Math.sin((x+y)*.018) * 1.2;
+
+
+    terrainPositions.setZ(
+        i,
+        height
+    );
+}
+
+
+terrainGeometry.computeVertexNormals();
+
+
+const terrainMaterial =
+new THREE.MeshStandardMaterial({
+
+    color:0x172515,
+
+    roughness:1
+
+});
+
+
+const terrain =
+new THREE.Mesh(
+
+    terrainGeometry,
+
+    terrainMaterial
+
+);
+
+
+terrain.rotation.x =
+-Math.PI / 2;
+
+scene.add(
+    terrain
+);
+
+
+/* =========================================================
+   PASTO
+========================================================= */
+
+const grassGroup =
+new THREE.Group();
+
+scene.add(
+    grassGroup
+);
+
+
+const grassCount =
+6500;
+
+
+for(
+    let i = 0;
+    i < grassCount;
+    i++
+){
+
+    const blade =
+    new THREE.Mesh(
+
+        new THREE.PlaneGeometry(
+
+            .055 +
+            Math.random()*.045,
+
+            .45 +
+            Math.random()*.65
+
+        ),
+
+        new THREE.MeshBasicMaterial({
+
+            color:0x263c1d,
+
+            side:
+            THREE.DoubleSide,
+
+            transparent:true,
+
+            opacity:.9
+
+        })
+
+    );
+
+
+    const x =
+        (Math.random()-.5) *
+        280;
+
+
+    const z =
+        (Math.random()-.5) *
+        280;
+
+
+    blade.position.set(
+
+        x,
+
+        .2 +
+        Math.random()*.12,
+
+        z
+
+    );
+
+
+    blade.rotation.y =
+        Math.random() *
+        Math.PI;
+
+
+    blade.rotation.z =
+        (Math.random()-.5) *
+        .45;
+
+
+    blade.userData.phase =
+        Math.random() *
+        Math.PI * 2;
+
+
+    blade.userData.wind =
+        .2 +
+        Math.random()*.5;
+
+
+    grassGroup.add(
+        blade
+    );
+}
+
+
+/* =========================================================
+   ÁRBOLES
+========================================================= */
+
+const treeGroup =
+new THREE.Group();
+
+scene.add(
+    treeGroup
+);
+
+
+const trunkMaterial =
+new THREE.MeshStandardMaterial({
+
+    color:0x3b281a,
+
+    roughness:1
+
+});
+
+
+const branchMaterial =
+new THREE.MeshStandardMaterial({
+
+    color:0x2b1c14,
+
+    roughness:1
+
+});
+
+
+const leafMaterials = [
+
+    new THREE.MeshStandardMaterial({
+        color:0x162719,
+        roughness:1
+    }),
+
+    new THREE.MeshStandardMaterial({
+        color:0x1d321e,
+        roughness:1
+    }),
+
+    new THREE.MeshStandardMaterial({
+        color:0x243d23,
+        roughness:1
+    }),
+
+    new THREE.MeshStandardMaterial({
+        color:0x122316,
+        roughness:1
+    })
+
+];
+
+
+/* =========================================================
+   CREAR ÁRBOL
+========================================================= */
+
+function createTree(
+    scale = 1
+){
+
+    const tree =
+    new THREE.Group();
+
+
+    /* TRONCO */
+
+    const trunkHeight =
+        4.5 * scale;
+
+
+    const trunk =
+    new THREE.Mesh(
+
+        new THREE.CylinderGeometry(
+
+            .22 * scale,
+
+            .48 * scale,
+
+            trunkHeight,
+
+            8
+
+        ),
+
+        trunkMaterial
+
+    );
+
+
+    trunk.position.y =
+        trunkHeight / 2;
+
+
+    tree.add(
+        trunk
+    );
+
+
+    /* RAMAS */
+
+    for(
+        let i = 0;
+        i < 9;
+        i++
+    ){
+
+        const branch =
+        new THREE.Mesh(
+
+            new THREE.CylinderGeometry(
+
+                .055 * scale,
+
+                .13 * scale,
+
+                1.6 * scale,
+
+                7
+
+            ),
+
+            branchMaterial
+
+        );
+
+
+        const angle =
+            Math.random() *
+            Math.PI * 2;
+
+
+        branch.position.set(
+
+            Math.cos(angle) *
+            (.45 +
+            Math.random()*.55) *
+            scale,
+
+            (2 +
+            Math.random()*2.1) *
+            scale,
+
+            Math.sin(angle) *
+            (.45 +
+            Math.random()*.55) *
+            scale
+
+        );
+
+
+        branch.rotation.z =
+            Math.PI/2 -
+            Math.random()*.55;
+
+
+        branch.rotation.y =
+            angle;
+
+
+        tree.add(
+            branch
+        );
+    }
+
+
+    /* COPA */
+
+    const foliageCount =
+        34;
+
+
+    for(
+        let i = 0;
+        i < foliageCount;
+        i++
+    ){
+
+        const foliage =
+        new THREE.Mesh(
+
+            new THREE.IcosahedronGeometry(
+
+                (.65 +
+                Math.random()*.8) *
+                scale,
+
+                1
+
+            ),
+
+            leafMaterials[
+                Math.floor(
+                    Math.random() *
+                    leafMaterials.length
+                )
+            ]
+
+        );
+
+
+        const angle =
+            Math.random() *
+            Math.PI * 2;
+
+
+        const radius =
+            Math.random() *
+            1.8 *
+            scale;
+
+
+        foliage.position.set(
+
+            Math.cos(angle) *
+            radius,
+
+            (3.7 +
+            Math.random()*2.7) *
+            scale,
+
+            Math.sin(angle) *
+            radius
+
+        );
+
+
+        foliage.scale.y =
+            .7 +
+            Math.random()*.6;
+
+
+        foliage.rotation.set(
+
+            Math.random(),
+
+            Math.random(),
+
+            Math.random()
+
+        );
+
+
+        tree.add(
+            foliage
+        );
+    }
+
+
+    tree.userData.phase =
+        Math.random() *
+        Math.PI * 2;
+
+
+    tree.userData.wind =
+        .4 +
+        Math.random()*.8;
+
+
+    return tree;
+}
+
+
+/* =========================================================
+   ÁRBOLES ALREDEDOR
+========================================================= */
+
+const treeCount =
+190;
+
+
+for(
+    let i = 0;
+    i < treeCount;
+    i++
+){
+
+    const angle =
+        Math.random() *
+        Math.PI * 2;
+
+
+    let radius;
+
+
+    if(i < 60){
+
+        radius =
+            16 +
+            Math.random()*30;
+
+    }else{
+
+        radius =
+            28 +
+            Math.random()*110;
+
+    }
+
+
+    const tree =
+        createTree(
+            .65 +
+            Math.random()*.85
+        );
+
+
+    tree.position.set(
+
+        Math.cos(angle) *
+        radius,
+
+        0,
+
+        Math.sin(angle) *
+        radius
+
+    );
+
+
+    tree.rotation.y =
+        Math.random() *
+        Math.PI * 2;
+
+
+    treeGroup.add(
+        tree
+    );
+}
+
+
+/* =========================================================
+   ÁRBOLES EXTRAS
+========================================================= */
+
+for(
+    let i = 0;
+    i < 80;
+    i++
+){
+
+    const tree =
+        createTree(
+            .55 +
+            Math.random()*.75
+        );
+
+
+    tree.position.set(
+
+        (Math.random()-.5) *
+        260,
+
+        0,
+
+        (Math.random()-.5) *
+        260
+
+    );
+
+
+    tree.rotation.y =
+        Math.random() *
+        Math.PI * 2;
+
+
+    treeGroup.add(
+        tree
+    );
+}
+
+
+/* =========================================================
+   LUCIÉRNAGAS
+========================================================= */
+
+const fireflyGroup =
+new THREE.Group();
+
+scene.add(
+    fireflyGroup
+);
+
+
+const fireflies =
+[];
+
+
+for(
+    let i = 0;
+    i < 60;
+    i++
+){
+
+    const firefly =
+    new THREE.Mesh(
+
+        new THREE.SphereGeometry(
+            .035,
+            6,
+            6
+        ),
+
+        new THREE.MeshBasicMaterial({
+
+            color:0xdfff8a
+
+        })
+
+    );
+
+
+    firefly.position.set(
+
+        (Math.random()-.5) *
+        100,
+
+        .7 +
+        Math.random()*5,
+
+        (Math.random()-.5) *
+        100
+
+    );
+
+
+    firefly.userData.phase =
+        Math.random() *
+        Math.PI * 2;
+
+
+    firefly.userData.speed =
+        .3 +
+        Math.random()*.7;
+
+
+    fireflies.push(
+        firefly
+    );
+
+
+    fireflyGroup.add(
+        firefly
+    );
+}
+
+
+/* =========================================================
+   CONTROLES
+========================================================= */
+
+let yaw = 0;
+
+let pitch =
+    -0.08;
+
+let targetYaw = 0;
+
+let targetPitch =
+    -0.08;
+
+let cameraDistance =
+    7;
+
+
+let dragging =
+    false;
+
+let previousX = 0;
+let previousY = 0;
+
+let pinchDistance =
+    null;
+
+
+/* =========================================================
+   RATÓN
+========================================================= */
+
+renderer.domElement.addEventListener(
+    "mousedown",
+    e => {
+
+        dragging = true;
+
+        previousX =
+            e.clientX;
+
+        previousY =
+            e.clientY;
+
+    }
+);
+
+
+window.addEventListener(
+    "mouseup",
+    () => {
+
+        dragging = false;
+
+    }
+);
+
+
+window.addEventListener(
+    "mousemove",
+    e => {
+
+        if(!dragging)
+            return;
+
+
+        const dx =
+            e.clientX -
+            previousX;
+
+
+        const dy =
+            e.clientY -
+            previousY;
+
+
+        targetYaw -=
+            dx * .004;
+
+
+        targetPitch -=
+            dy * .003;
+
+
+        targetPitch =
+            THREE.MathUtils.clamp(
+
+                targetPitch,
+
+                -.9,
+
+                .7
+
+            );
+
+
+        previousX =
+            e.clientX;
+
+        previousY =
+            e.clientY;
+
+    }
+);
+
+
+/* =========================================================
+   RUEDA
+========================================================= */
+
+renderer.domElement.addEventListener(
+
+    "wheel",
+
+    e => {
+
+        cameraDistance +=
+            e.deltaY * .01;
+
+
+        cameraDistance =
+            THREE.MathUtils.clamp(
+
+                cameraDistance,
+
+                2.5,
+
+                15
+
+            );
+
+    },
+
+    {
+        passive:true
+    }
+
+);
+
+
+/* =========================================================
+   TOUCH
+========================================================= */
+
+renderer.domElement.addEventListener(
+
+    "touchstart",
+
+    e => {
+
+        if(
+            e.touches.length === 1
+        ){
+
+            previousX =
+                e.touches[0].clientX;
+
+            previousY =
+                e.touches[0].clientY;
+
+        }
+
+
+        if(
+            e.touches.length === 2
+        ){
+
+            pinchDistance =
+                Math.hypot(
+
+                    e.touches[0].clientX -
+                    e.touches[1].clientX,
+
+                    e.touches[0].clientY -
+                    e.touches[1].clientY
+
+                );
+
+        }
+
+    },
+
+    {
+        passive:false
+    }
+
+);
+
+
+renderer.domElement.addEventListener(
+
+    "touchmove",
+
+    e => {
+
+        e.preventDefault();
+
+
+        /* GIRAR */
+
+        if(
+            e.touches.length === 1
+        ){
+
+            const x =
+                e.touches[0].clientX;
+
+            const y =
+                e.touches[0].clientY;
+
+
+            const dx =
+                x - previousX;
+
+            const dy =
+                y - previousY;
+
+
+            targetYaw -=
+                dx * .005;
+
+
+            targetPitch -=
+                dy * .0035;
+
+
+            targetPitch =
+                THREE.MathUtils.clamp(
+
+                    targetPitch,
+
+                    -.9,
+
+                    .7
+
+                );
+
+
+            previousX = x;
+
+            previousY = y;
+
+        }
+
+
+        /* ZOOM */
+
+        if(
+            e.touches.length === 2
+        ){
+
+            const distance =
+                Math.hypot(
+
+                    e.touches[0].clientX -
+                    e.touches[1].clientX,
+
+                    e.touches[0].clientY -
+                    e.touches[1].clientY
+
+                );
+
+
+            if(
+                pinchDistance !== null
+            ){
+
+                const difference =
+                    distance -
+                    pinchDistance;
+
+
+                cameraDistance -=
+                    difference * .015;
+
+
+                cameraDistance =
+                    THREE.MathUtils.clamp(
+
+                        cameraDistance,
+
+                        2.5,
+
+                        15
+
+                    );
+
+            }
+
+
+            pinchDistance =
+                distance;
+
+        }
+
+    },
+
+    {
+        passive:false
+    }
+
+);
+
+
+renderer.domElement.addEventListener(
+
+    "touchend",
+
+    () => {
+
+        pinchDistance =
+            null;
+
+    }
+
+);
+
+
+/* =========================================================
+   ANIMACIÓN
+========================================================= */
+
+const clock =
+new THREE.Clock();
+
+
+function animate(){
+
+    requestAnimationFrame(
+        animate
+    );
+
+
+    const time =
+        clock.getElapsedTime();
+
+
+    /* CÁMARA */
+
+    yaw +=
+        (targetYaw - yaw) *
+        .08;
+
+
+    pitch +=
+        (targetPitch - pitch) *
+        .08;
+
+
+    const lookHeight =
+        2.1;
+
+
+    camera.position.x =
+        Math.sin(yaw) *
+        cameraDistance;
+
+
+    camera.position.z =
+        Math.cos(yaw) *
+        cameraDistance;
+
+
+    camera.position.y =
+        lookHeight;
+
+
+    camera.lookAt(
+
+        camera.position.x +
+        Math.sin(yaw) *
+        Math.cos(pitch),
+
+        lookHeight +
+        Math.sin(pitch) * 7,
+
+        camera.position.z +
+        Math.cos(yaw) *
+        Math.cos(pitch)
+
+    );
+
+
+    /* =====================================================
+       VIENTO DE LOS ÁRBOLES
+    ===================================================== */
+
+    treeGroup.children.forEach(
+
+        tree => {
+
+            const phase =
+                tree.userData.phase;
+
+            const wind =
+                tree.userData.wind;
+
+
+            tree.rotation.z =
+
+                Math.sin(
+                    time*.7 +
+                    phase
+                ) *
+
+                .018 *
+                wind;
+
+
+            tree.rotation.x =
+
+                Math.cos(
+                    time*.55 +
+                    phase
+                ) *
+
+                .012 *
+                wind;
+
+        }
+
+    );
+
+
+    /* =====================================================
+       VIENTO DEL PASTO
+    ===================================================== */
+
+    grassGroup.children.forEach(
+
+        blade => {
+
+            blade.rotation.z =
+
+                Math.sin(
+
+                    time*1.8 +
+                    blade.userData.phase
+
+                ) *
+
+                .12 *
+
+                blade.userData.wind;
+
+        }
+
+    );
+
+
+    /* =====================================================
+       LUCIÉRNAGAS
+    ===================================================== */
+
+    fireflies.forEach(
+
+        firefly => {
+
+            const phase =
+                firefly.userData.phase;
+
+            const speed =
+                firefly.userData.speed;
+
+
+            firefly.position.y +=
+
+                Math.sin(
+
+                    time*speed +
+                    phase
+
+                ) * .002;
+
+
+            firefly.position.x +=
+
+                Math.sin(
+
+                    time*.2 +
+                    phase
+
+                ) * .003;
+
+
+            firefly.position.z +=
+
+                Math.cos(
+
+                    time*.17 +
+                    phase
+
+                ) * .003;
+
+        }
+
+    );
+
+
+    /* =====================================================
+       ESTRELLAS
+    ===================================================== */
+
+    stars.rotation.y =
+        time * .0008;
+
+
+    /* =====================================================
+       DESTELLO DE ESTRELLAS
+    ===================================================== */
+
+    shiningStarObjects.forEach(
+
+        star => {
+
+            const phase =
+                star.userData.phase;
+
+            const speed =
+                star.userData.speed;
+
+
+            star.material.opacity =
+
+                .45 +
+
+                Math.sin(
+
+                    time *
+                    speed +
+                    phase
+
+                ) * .5;
+
+        }
+
+    );
+
+
+    renderer.render(
+        scene,
+        camera
+    );
+
+}
+
+
+/* =========================================================
+   INTRO
+========================================================= */
+
+setTimeout(
+
+    () => {
+
+        document.getElementById(
+            "intro"
+        ).style.opacity = "0";
+
+
+        document.getElementById(
+            "controls"
+        ).style.opacity = "0";
+
+    },
+
+    2500
+
+);
+
+
+setTimeout(
+
+    () => {
+
+        document.getElementById(
+            "intro"
+        ).style.display = "none";
+
+    },
+
+    4200
+
+);
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener(
+
+    "resize",
+
+    () => {
+
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
+
+
+        camera.updateProjectionMatrix();
+
+
+        renderer.setSize(
+
+            window.innerWidth,
+
+            window.innerHeight
+
+        );
+
+    }
+
+);
+
+
+/* =========================================================
+   INICIAR
+========================================================= */
+
+animate();
+
+</script>
+
+</body>
+</html>
